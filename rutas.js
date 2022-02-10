@@ -43,13 +43,12 @@ rutasProtegidas.use((req, res, next) => {
 
  // POST - Verifica el email y la contraseña para el login
 router.post("/login", async (req, res) => {
-    const body = req.body;
-    const user = await Usuario.findOne({ email: body.email });
+    const user = await Usuario.findOne({ email: req.body.email });
     const semilla = process.env.SEMILLA_JWT;
 
     if (user) {
       // Compara el password que envié con el de la base de datos
-      const validPassword = await bcrypt.compare(body.password, user.password);
+      const validPassword = await bcrypt.compare(req.body.password, req.body.password);
       if (validPassword) {
         // Genero el token y lo mando con el usuario en la propiedad "token"
         // El payload es el email y el nombre de usuario
@@ -95,26 +94,35 @@ router.post("/reparaciones", rutasProtegidas, async (req, res) => {
         await reparacion.save();
         res.send(reparacion);
     } catch {
-        res.status( 400 );
+        res.status(400);
         res.send({ error: "Hubo un problema al cargar" });
     };
 });
 
-// GET - Permite traer un empleado en particular por id
+// GET - Permite traer una reparacion en particular por id
 router.get( "/reparaciones/:id", rutasProtegidas, async (req, res) => { 
     try {
         const reparacion = await Reparacion.findOne({ _id: req.params.id });
-        res.send(reparacion);
+        const usuario = await Usuario.findOne({ _id: reparacion.data.UsuarioRep });
+        res.send({
+            ...reparacion, 
+            data: {
+                ...reparacion.data,
+                NombreUsu: usuario.NombreUsu,
+                ApellidoUsu: usuario.ApellidoUsu,
+                TelefonoUsu: usuario.TelefonoUsu
+            }
+        });
     } catch {
-        res.status( 404 );
+        res.status(404);
         res.send({ error: "La reparación no existe!" });
     };
 });
 
 // PATCH - Permite actualizar una reparación
-router.patch("/reparacion/:id", rutasProtegidas, async (req, res) => {
+router.patch("/reparaciones/:id", rutasProtegidas, async (req, res) => {
     try {
-        // La línea de abajo busca el empleado por id, si no existe va al catch
+        // La línea de abajo busca la reparación por id, si no existe va al catch
         const reparacion = await Reparacion.findOne({ _id: req.params.id });
         // A la reparacion le copio todo lo que tenía y le sobrescribo todo lo del body
         reparacion = {
@@ -139,12 +147,12 @@ router.patch("/reparacion/:id", rutasProtegidas, async (req, res) => {
         // // };
         //////////////////////////////////////////////////////////////////////
 
-        // Guardo el empleado
+        // Guardo la reparación
         await reparacion.save();
         res.send( reparacion );
     } catch {
         res.status(404);
-        res.send("Empleado no existe!");
+        res.send({ error: "La reparación no existe!"} );
     };
 });
 
@@ -207,7 +215,7 @@ router.delete( "/reparaciones/:id", rutasProtegidas, async ( req, res ) => {
 // GET - Devuelve el listado de usuarios
 router.get("/usuarios", async (req, res) => {
     try {
-        const usuarios = await TipoJornada.find();
+        const usuarios = await Usuario.find();
         res.send(usuarios);
     } catch {
         res.status(404);
@@ -215,35 +223,53 @@ router.get("/usuarios", async (req, res) => {
     };
 });
 
+// GET - Permite traer un usuario en particular por id
+router.get( "/usuarios/:id", async (req, res) => { 
+    try {
+        const usuario = await Usuario.findOne({ _id: req.params.id });
+        res.send(usuario)
+    } catch {
+        res.status(404);
+        res.send({ error: "El usuario no existe!" });
+    };
+});
+
 // POST - Permite dar de alta una tipo de jornada
 router.post("/usuarios", async (req, res) => {
-    // try {
+    try {
         // el body contiene el objeto usuario tal como va en la db
         const usuario = new Usuario(req.body);
         await usuario.save();
         res.send(usuario);
-    // } catch {
-    //     res.status(400);
-    //     res.send({ error: "Hubo un problema al cargar" });
-    // };
+    } catch {
+        res.status(400);
+        res.send({ error: "Hubo un problema al cargar" });
+    };
 });
 
 // PATCH - Permite actualizar un usuario
-router.patch("/usuario/:id", async (req, res) => {
+router.patch("/usuarios/:id", async (req, res) => {
     try {
-        // La línea de abajo busca el empleado por id, si no existe va al catch
+        console.log("id: " + req.params.id);
+        // La línea de abajo busca el usuario por id, si no existe va al catch
         const usuario = await Usuario.findOne({ _id: req.params.id });
         // A la reparacion le copio todo lo que tenía y le sobrescribo todo lo del body
+        console.log("usuario: " + JSON.stringify(usuario));
+        console.log("usuario: " + JSON.stringify({...usuario._doc}));
+        console.log("req.body: " + JSON.stringify({...req.body}));
+        // console.log("doto junto: " + JSON.stringify({...usuario,...req.body}));
         usuario = {
-            ...usuario,
+            ...usuario._doc,
             ...req.body
         };
-        // Guardo el empleado
+        
+        console.log("usuario: " + JSON.stringify(usuario));
+        // Guardo el usuario
         await usuario.save();
         res.send(usuario);
     } catch {
         res.status(404);
-        res.send("Empleado no existe!");
+        res.send( {code: "Usuario no existe!"} );
     };
 });
 

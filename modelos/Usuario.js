@@ -16,10 +16,19 @@ const schemaUsuario = mongoose.Schema({
     EmailUsu: {
         type: String
     },
-    ProvinciaUsu:{
+    ProvinciaUsu: {
         type: String
     },
-    CiudadUsu:{
+    CiudadUsu: {
+        type: String
+    },
+    Admin: {
+        type: Boolean
+    },
+    Nick: {
+        type: String
+    },
+    UrlFotoUsu: {
         type: String
     }
 });
