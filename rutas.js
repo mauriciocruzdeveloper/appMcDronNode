@@ -30,7 +30,6 @@ rutasProtegidas.use((req, res, next) => {
                 console.log("error en verify: " + err)
                 return res.status(401).json({ mensaje: 'Token inválida' });    
             } else {
-                console.log("decoded en verify: " + JSON.stringify(decoded))
                 req.decoded = decoded;    
                 next();
             }
@@ -48,11 +47,12 @@ router.post("/login", async (req, res) => {
 
     if (user) {
       // Compara el password que envié con el de la base de datos
-      const validPassword = await bcrypt.compare(req.body.password, req.body.password);
+      // Comenté la verificación del pass hasta que haga el registro bien.
+      const validPassword = true; // await bcrypt.compare(req.body.password, req.body.password);
       if (validPassword) {
         // Genero el token y lo mando con el usuario en la propiedad "token"
         // El payload es el email y el nombre de usuario
-        const payload = { email: body.email, nombre: user.nombre }; 
+        const payload = { email: req.body.email, nombre: user.NombreUsu }; 
         const token = jwt.sign(payload, semilla, { expiresIn: 1440 });
         res.send({
             ...user._doc,
@@ -101,7 +101,7 @@ router.post("/reparaciones", rutasProtegidas, async (req, res) => {
 
 // GET - Permite traer una reparacion en particular por id
 router.get( "/reparaciones/:id", rutasProtegidas, async (req, res) => { 
-    try {
+    // try {
         const reparacion = await Reparacion.findOne({ _id: req.params.id });
         const usuario = await Usuario.findOne({ _id: reparacion.data.UsuarioRep });
         res.send({
@@ -113,52 +113,29 @@ router.get( "/reparaciones/:id", rutasProtegidas, async (req, res) => {
                 TelefonoUsu: usuario.TelefonoUsu
             }
         });
-    } catch {
-        res.status(404);
-        res.send({ error: "La reparación no existe!" });
-    };
+    // } catch {
+    //     res.status(404);
+    //     res.send({ error: "La reparación no existe!" });
+    // };
 });
 
-// PATCH - Permite actualizar una reparación
-router.patch("/reparaciones/:id", rutasProtegidas, async (req, res) => {
+// PATCH - Permite actualizar un usuario
+router.patch("/reparaciones/:id", async (req, res) => {
     try {
-        // La línea de abajo busca la reparación por id, si no existe va al catch
-        const reparacion = await Reparacion.findOne({ _id: req.params.id });
-        // A la reparacion le copio todo lo que tenía y le sobrescribo todo lo del body
-        reparacion = {
-            ...reparacion,
-            ...req.body
-        };
-
-        // LO DE ABAJO ME PARECE UN POCO ENGORROSO, MEJOR LO DE ARRIBA/////////
-        // const reparacion = await Reparacion.findOne({ _id: req.params.id });
-        // if ( req.body.nombre ) {
-        //     empleado.nombre = req.body.nombre;
-        // };
-        // if ( req.body.email ) {
-        //     empleado.email = req.body.email;
-        // };
-        // if ( req.body.password ) {
-        //     empleado.password = req.body.password;
-        // };
-        // // Lo tengo que comentar porque sino no pasa el if cuando es falso.
-        // // if ( req.body.admin ) {
-        //     empleado.admin = req.body.admin;
-        // // };
-        //////////////////////////////////////////////////////////////////////
-
-        // Guardo la reparación
-        await reparacion.save();
-        res.send( reparacion );
+        const filter = { _id: req.params.id };
+        const update = { ...req.body };
+        let reparacion = await Reparacion.findOneAndUpdate(filter, update, {
+            new: true
+          });
+        res.send(reparacion);
     } catch {
         res.status(404);
-        res.send({ error: "La reparación no existe!"} );
+        res.send( {code: "Problema al modificar reparacion!"} );
     };
 });
 
 // DELETE - Permite borrar una reparación por id
 router.delete( "/reparaciones/:id", rutasProtegidas, async ( req, res ) => {
-    console.log( 'Delete -> ' + req.params.id );
     try {
         await Reparacion.deleteOne({ _id: req.params.id });
         res.send("Reparación borrada");
@@ -173,33 +150,6 @@ router.delete( "/reparaciones/:id", rutasProtegidas, async ( req, res ) => {
 //////   USUARIO   //////
 //////////////////////////////////
 
-
-// PATCH - Permite actualizar un empleado por email
-// router.patch( "/usuario/:email", rutasProtegidas, async ( req, res ) => {
-//     try {
-//         const empleado = await Empleado.find().byEmail(req.params.email );
-//         if ( req.body.nombre ) {
-//             empleado.nombre = req.body.nombre;
-//         };
-//         if ( req.body.email ) {
-//             empleado.email = req.body.email;
-//         };
-//         if ( req.body.password ) {
-//             empleado.password = req.body.password;
-//         };
-//         // Lo tengo que comentar porque sino no pasa el if cuando es falso.
-//         // if ( req.body.admin ) {
-//             empleado.admin = req.body.admin;
-//         // };
-//         await empleado.save();
-//         res.send( empleado );
-//     } catch {
-//         res.status( 404 );
-//         res.send( "Empleado no existe!" );
-//     };
-// });
-
-
 // // Query helper - get tipo de jornada por tipo (EXACTO)
 // router.get( "/tipojornadaByTipo/:tipo", rutasProtegidas, async ( req, res ) => {
 //     try {
@@ -213,7 +163,7 @@ router.delete( "/reparaciones/:id", rutasProtegidas, async ( req, res ) => {
 // });
 
 // GET - Devuelve el listado de usuarios
-router.get("/usuarios", async (req, res) => {
+router.get("/usuarios", rutasProtegidas, async (req, res) => {
     try {
         const usuarios = await Usuario.find();
         res.send(usuarios);
@@ -224,7 +174,7 @@ router.get("/usuarios", async (req, res) => {
 });
 
 // GET - Permite traer un usuario en particular por id
-router.get( "/usuarios/:id", async (req, res) => { 
+router.get( "/usuarios/:id", rutasProtegidas, async (req, res) => { 
     try {
         const usuario = await Usuario.findOne({ _id: req.params.id });
         res.send(usuario)
@@ -234,8 +184,8 @@ router.get( "/usuarios/:id", async (req, res) => {
     };
 });
 
-// POST - Permite dar de alta una tipo de jornada
-router.post("/usuarios", async (req, res) => {
+// POST - Permite dar de alta un usuario
+router.post("/usuarios", rutasProtegidas, async (req, res) => {
     try {
         // el body contiene el objeto usuario tal como va en la db
         const usuario = new Usuario(req.body);
@@ -248,44 +198,31 @@ router.post("/usuarios", async (req, res) => {
 });
 
 // PATCH - Permite actualizar un usuario
-router.patch("/usuarios/:id", async (req, res) => {
+router.patch("/usuarios/:id", rutasProtegidas, async (req, res) => {
     try {
-        console.log("id: " + req.params.id);
-        // La línea de abajo busca el usuario por id, si no existe va al catch
-        const usuario = await Usuario.findOne({ _id: req.params.id });
-        // A la reparacion le copio todo lo que tenía y le sobrescribo todo lo del body
-        console.log("usuario: " + JSON.stringify(usuario));
-        console.log("usuario: " + JSON.stringify({...usuario._doc}));
-        console.log("req.body: " + JSON.stringify({...req.body}));
-        // console.log("doto junto: " + JSON.stringify({...usuario,...req.body}));
-        usuario = {
-            ...usuario._doc,
-            ...req.body
-        };
-        
-        console.log("usuario: " + JSON.stringify(usuario));
-        // Guardo el usuario
-        await usuario.save();
+        const filter = { _id: req.params.id };
+        const update = { ...req.body };
+        let usuario = await Usuario.findOneAndUpdate(filter, update, {
+            new: true
+          });
         res.send(usuario);
     } catch {
         res.status(404);
-        res.send( {code: "Usuario no existe!"} );
+        res.send( {code: "Problema al modificar usuario!"} );
     };
 });
 
 // DELETE - Permite borrar un usuario por id
-router.delete("/usuario/:id", async (req, res) => {
-    console.log('Delete -> ' + req.params.id );
+router.delete("/usuarios/:id", rutasProtegidas, async (req, res) => {
     try {
-        await TipoJornada.deleteOne({ _id: req.params.id });
-        res.send("Tipo de Jornada borrada");
+        await Usuario.deleteOne({ _id: req.params.id });
+        res.send("Usuario borrado: " + req.params.id);
         res.status(204).send();
     } catch {
         res.status(404);
-        res.send({ error: "Tipo de Jornada no existe!" });  
+        res.send({ error: "Problema al borrar Usuario!" });  
     };
 });
-
 
 // Exportable
 module.exports = router;

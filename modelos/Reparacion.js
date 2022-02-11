@@ -8,6 +8,12 @@ const schemaReparacion = mongoose.Schema({
         type: String,
         required: [false, ''] // Ver cómo capturar los errores de validación.
     },
+    PrioridadRep:{
+        type: Number
+    },
+    UsuarioRep: {
+        type: String
+    },
     DriveRep: {
         type: String
     },
