@@ -39,8 +39,9 @@ schemaUsuario.path('EmailUsu').validate((value) => {
   }, 'Sintaxis de e-mail erróneo');
 
 // Query helper - get empleados por email (EXACTO)
-schemaUsuario.query.byEmail = function(email) {
-    return this.findOne({email: email});
+schemaUsuario.query.byEmail = async function(email) {
+    const usuario = await this.findOne({EmailUsu: email});
+    return usuario;
 }
 
 

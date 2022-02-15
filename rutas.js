@@ -61,10 +61,10 @@ router.post("/login", async (req, res) => {
         });
         res.status(200).json({ message: "Password Válido" });
       } else {
-        res.status(401).json({ error: "Password Inválido" });
+        res.status(401).json({ code: "Password Inválido" });
       }
     } else {
-      res.status(404).json({ error: "No se encontró el usuario" });
+      res.status(404).json({ code: "No se encontró el usuario" });
     }
 });
 
@@ -80,7 +80,7 @@ router.get( "/reparaciones", rutasProtegidas, async (req, res) => {
         res.send(reparaciones);
     } catch {
         res.status(404);
-        res.send({ error: "Hubo un problema" });
+        res.send({ code: "Hubo un problema" });
     };
 });
 
@@ -95,28 +95,19 @@ router.post("/reparaciones", rutasProtegidas, async (req, res) => {
         res.send(reparacion);
     } catch {
         res.status(400);
-        res.send({ error: "Hubo un problema al cargar" });
+        res.send({ code: "Hubo un problema al cargar" });
     };
 });
 
 // GET - Permite traer una reparacion en particular por id
 router.get( "/reparaciones/:id", rutasProtegidas, async (req, res) => { 
-    // try {
+    try {
         const reparacion = await Reparacion.findOne({ _id: req.params.id });
-        const usuario = await Usuario.findOne({ _id: reparacion.data.UsuarioRep });
-        res.send({
-            ...reparacion, 
-            data: {
-                ...reparacion.data,
-                NombreUsu: usuario.NombreUsu,
-                ApellidoUsu: usuario.ApellidoUsu,
-                TelefonoUsu: usuario.TelefonoUsu
-            }
-        });
-    // } catch {
-    //     res.status(404);
-    //     res.send({ error: "La reparación no existe!" });
-    // };
+        res.send(reparacion);
+    } catch {
+        res.status(404);
+        res.send({ code: "La reparación no existe!" });
+    };
 });
 
 // PATCH - Permite actualizar un usuario
@@ -130,7 +121,7 @@ router.patch("/reparaciones/:id", async (req, res) => {
         res.send(reparacion);
     } catch {
         res.status(404);
-        res.send( {code: "Problema al modificar reparacion!"} );
+        res.send({ code: "Problema al modificar reparacion!" });
     };
 });
 
@@ -142,7 +133,7 @@ router.delete( "/reparaciones/:id", rutasProtegidas, async ( req, res ) => {
         res.status( 204 ).send();
     } catch {
         res.status( 404 );
-        res.send({ error: "La reparación no existe!" });  
+        res.send({ code: "La reparación no existe!" });  
     };
 });
 
@@ -150,17 +141,18 @@ router.delete( "/reparaciones/:id", rutasProtegidas, async ( req, res ) => {
 //////   USUARIO   //////
 //////////////////////////////////
 
-// // Query helper - get tipo de jornada por tipo (EXACTO)
-// router.get( "/tipojornadaByTipo/:tipo", rutasProtegidas, async ( req, res ) => {
-//     try {
-//         const tipojornada = await TipoJornada.find().byTipo( req.params.tipo );
-//         res.send( tipojornada );
-//     } catch {
-//         res.status( 404 );
-//         res.send({ error: "Tipo de Jornada no existe!" });
-//     }
-    
-// });
+// Query helper - get tipo de jornada por tipo (EXACTO)
+router.get( "/usuarioByEmail/:email", rutasProtegidas, async (req, res) => {
+    try {
+        console.log("usuarioByEmail: " + req.params.email);
+        const usuario = await Usuario.find().byEmail(req.params.email);
+        console.log("usuario: " + JSON.stringify(usuario));
+        res.send(usuario);
+    } catch {
+        res.status(404);
+        res.send({ code: "Usuario no encontrado!" });
+    } 
+});
 
 // GET - Devuelve el listado de usuarios
 router.get("/usuarios", rutasProtegidas, async (req, res) => {
@@ -169,7 +161,7 @@ router.get("/usuarios", rutasProtegidas, async (req, res) => {
         res.send(usuarios);
     } catch {
         res.status(404);
-        res.send({ error: "Hubo un problema" });
+        res.send({ code: "Hubo un problema" });
     };
 });
 
@@ -180,7 +172,7 @@ router.get( "/usuarios/:id", rutasProtegidas, async (req, res) => {
         res.send(usuario)
     } catch {
         res.status(404);
-        res.send({ error: "El usuario no existe!" });
+        res.send({ code: "El usuario no existe!" });
     };
 });
 
@@ -188,12 +180,13 @@ router.get( "/usuarios/:id", rutasProtegidas, async (req, res) => {
 router.post("/usuarios", rutasProtegidas, async (req, res) => {
     try {
         // el body contiene el objeto usuario tal como va en la db
+        console.log("post server: " + JSON.stringify(req.body));
         const usuario = new Usuario(req.body);
         await usuario.save();
         res.send(usuario);
-    } catch {
-        res.status(400);
-        res.send({ error: "Hubo un problema al cargar" });
+    } catch(error) {
+        console.log("error.message: " + error.message);
+        res.status(400).json({msj: error.message});
     };
 });
 
@@ -220,7 +213,7 @@ router.delete("/usuarios/:id", rutasProtegidas, async (req, res) => {
         res.status(204).send();
     } catch {
         res.status(404);
-        res.send({ error: "Problema al borrar Usuario!" });  
+        res.send({ code: "Problema al borrar Usuario!" });  
     };
 });
 
